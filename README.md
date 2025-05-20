@@ -1,5 +1,4 @@
-# [![Browser-Based](https://img.shields.io/badge/Runs%20In-Browser-blue)](https://developer.mozilla.org/en-US/docs/Web/API/Web_Crypto_API) 
-# [![No Server](https://img.shields.io/badge/No%20Server%20Needed-success)](https://en.wikipedia.org/wiki/Client-side_encryption)
+# [![Browser-Based](https://img.shields.io/badge/Runs%20In-Browser-blue)](https://developer.mozilla.org/en-US/docs/Web/API/Web_Crypto_API)  [![No Server](https://img.shields.io/badge/No%20Server%20Needed-success)](https://en.wikipedia.org/wiki/Client-side_encryption)
 
 # 🔒 CipherVault
 A no-nonsense encryption tool that works right in your browser. Encrypt messages with classic ciphers or RSA, then decrypt them no server needed. Built with vanilla JS for privacy nerds and curious learners.
