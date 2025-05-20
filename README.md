@@ -47,4 +47,6 @@ Just open `index.html` in any modern browser. No server needed.
 - All processing happens in your browser
 - Keys never leave your device
 - Refresh clears RSA keys unless exported
+- [![Browser-Based](https://img.shields.io/badge/Runs%20In-Browser-blue)](https://developer.mozilla.org/en-US/docs/Web/API/Web_Crypto_API) 
+[![No Server](https://img.shields.io/badge/No%20Server%20Needed-success)](https://en.wikipedia.org/wiki/Client-side_encryption)
 
