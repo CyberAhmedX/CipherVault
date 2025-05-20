@@ -1,12 +1,11 @@
-// Replace the entire login function with:
+
 async function login() {
   const username = document.getElementById("username").value;
   const password = document.getElementById("password").value;
 
-  // In a real app, this would be a server-side check
-  // For now, we'll keep the demo credentials but with better structure
+
   if (username === "admin" && password === "password123") {
-    // Simulate getting a token
+   
     const token = "demo_token_" + Math.random().toString(36).substring(2);
     localStorage.setItem("authToken", token);
     localStorage.setItem("currentUser", username);
@@ -18,16 +17,16 @@ async function login() {
   }
 }
 
-// Show key only when needed
+
 function toggleKeyField() {
   const algo = document.getElementById("algorithm").value;
 
-  // Hide all key input fields
+ 
   document.getElementById("keyCaesar").style.display = "none";
   document.getElementById("keyVigenere").style.display = "none";
   document.getElementById("keyRSA").style.display = "none";
 
-  // Show the one that matches the selected algorithm
+  
   if (algo === "caesar") {
     document.getElementById("keyCaesar").style.display = "block";
   } else if (algo === "vigenere") {
@@ -53,7 +52,7 @@ function toggleDecryptKeyField() {
 }
 
 
-// Caesar Cipher
+
 function caesarCipherEncrypt(text, key) {
   const shift = parseInt(key) || 0;
   return text.split('').map(char => {
@@ -71,7 +70,7 @@ function caesarCipherDecrypt(text, key) {
   return caesarCipherEncrypt(text, 26 - shift);
 }
 
-// Vigenère Cipher
+
 function vigenereEncrypt(text, key) {
   let result = "", j = 0;
   key = key.toLowerCase();
@@ -102,9 +101,9 @@ function vigenereDecrypt(text, key) {
   return result;
 }
 
-let rsaKeyPair = null; // Keep this line at the top with other global variables
+let rsaKeyPair = null; 
 
-// 1. Replace generateRSAKeyPair()
+
 async function generateRSAKeyPair() {
   try {
     rsaKeyPair = await window.crypto.subtle.generateKey(
@@ -114,7 +113,7 @@ async function generateRSAKeyPair() {
         publicExponent: new Uint8Array([1, 0, 1]),
         hash: "SHA-256",
       },
-      true, // Make keys exportable
+      true, 
       ["encrypt", "decrypt"]
     );
     console.log("New RSA keys generated");
@@ -125,10 +124,10 @@ async function generateRSAKeyPair() {
   }
 }
 
-// 2. Replace rsaEncrypt()
+
 async function rsaEncrypt(text) {
   try {
-    // Auto-generate keys if missing
+   
     if (!rsaKeyPair) {
       console.log("No RSA keys found - generating new pair");
       await generateRSAKeyPair();
@@ -147,7 +146,7 @@ async function rsaEncrypt(text) {
   }
 }
 
-// 3. Replace rsaDecrypt()
+
 async function rsaDecrypt(text) {
   try {
     if (!rsaKeyPair) {
@@ -169,26 +168,26 @@ async function rsaDecrypt(text) {
 }
 
 
-// Add these new functions after the existing RSA functions
+
 async function exportRSAKeys() {
   if (!rsaKeyPair) await generatersaKeyPair();
   
   const exportedPublic = await crypto.subtle.exportKey("jwk", rsaKeyPair.publicKey);
   const exportedPrivate = await crypto.subtle.exportKey("jwk", rsaKeyPair.privateKey);
   
-  // Display in modal instead of alert
+ 
   document.getElementById("publicKeyDisplay").value = JSON.stringify(exportedPublic, null, 2);
   document.getElementById("privateKeyDisplay").value = JSON.stringify(exportedPrivate, null, 2);
   document.getElementById("keyExportModal").style.display = "flex";
   
-  // Optional: Save to localStorage
+
   localStorage.setItem('rsaKeys', JSON.stringify({
     publicKey: exportedPublic,
     privateKey: exportedPrivate
   }));
 }
 
-// Add this new helper function
+
 function copyKey(elementId) {
   const textarea = document.getElementById(elementId);
   textarea.select();
@@ -225,7 +224,7 @@ async function importRSAKeys() {
   }
 }
 
-// SHA-256
+
 async function sha256Hash(text) {
   const buffer = new TextEncoder().encode(text);
   const hashBuffer = await crypto.subtle.digest("SHA-256", buffer);
@@ -233,7 +232,7 @@ async function sha256Hash(text) {
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-// ENCRYPT
+
 async function encryptText() {
   const plainText = document.getElementById("plaintext").value;
   const algo = document.getElementById("algorithm").value;
@@ -283,7 +282,7 @@ async function encryptText() {
   document.getElementById("ciphertext").value = result;
 }
 
-// DECRYPT
+
 async function decryptText() {
   const cipherText = document.getElementById("plaintext").value;
   const algo = document.getElementById("algorithm").value;
@@ -384,7 +383,7 @@ function copyDecryptedText() {
   alert("Decrypted text copied!");
 }
 
-// After all other functions
+
 function showSavedMessages() {
   const currentUser = localStorage.getItem("currentUser");
   if (!currentUser) return;
@@ -396,20 +395,19 @@ function showSavedMessages() {
 }
 
 
-// Auto-login on page load
-// Update the window.onload function
+
 window.onload = async () => {
   const user = localStorage.getItem("currentUser");
   if (user) {
     document.getElementById("loginBox").style.display = "none";
     document.getElementById("appContent").style.display = "block";
     
-    // Auto-load RSA keys if they exist
+
     await loadRSAKeys();
   }
 };
 
-// Add this new function to load keys
+
 async function loadRSAKeys() {
   const savedKeys = localStorage.getItem('rsaKeys');
   if (!savedKeys) return;
@@ -436,6 +434,6 @@ async function loadRSAKeys() {
 
 function logout() {
   localStorage.removeItem("currentUser");
-  localStorage.removeItem('rsaKeys'); // Clear keys on logout
+  localStorage.removeItem('rsaKeys'); 
   location.reload();
 }
