@@ -389,9 +389,19 @@ function showSavedMessages() {
   if (!currentUser) return;
 
   const stored = JSON.parse(localStorage.getItem(currentUser + "_messages")) || [];
-  let messageList = stored.map(msg => 
-    `<li><strong>${msg.method}</strong>: ${msg.encrypted}</li>`).join("");
-  document.getElementById("savedMessages").innerHTML = `<ul>${messageList}</ul>`;
+  const container = document.getElementById("savedMessages");
+  container.innerHTML = "";
+
+  const ul = document.createElement("ul");
+  stored.forEach(msg => {
+    const li = document.createElement("li");
+    const strong = document.createElement("strong");
+    strong.textContent = msg.method;
+    li.appendChild(strong);
+    li.appendChild(document.createTextNode(": " + msg.encrypted));
+    ul.appendChild(li);
+  });
+  container.appendChild(ul);
 }
 
 
