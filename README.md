@@ -12,7 +12,7 @@ A browser-based encryption tool with a passphrase-protected vault. Encrypt messa
 - **Encrypted vault:** saved results and your keys are encrypted with a key derived from your passphrase
 - **Key management:** fingerprint, public key sharing, private key backup, import and regeneration
 - Auto-locks after 10 minutes without activity, and works fully offline
-- Light and dark mode, and it works on phones
+- Light and dark mode that follows your system setting
 
 ## Security design
 
