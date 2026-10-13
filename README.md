@@ -1,69 +1,87 @@
-# [![Browser-Based](https://img.shields.io/badge/Runs%20In-Browser-blue)](https://developer.mozilla.org/en-US/docs/Web/API/Web_Crypto_API)  [![No Server](https://img.shields.io/badge/No%20Server%20Needed-success)](https://en.wikipedia.org/wiki/Client-side_encryption)
+# CipherVault
 
-# 🔒 CipherVault
-![image](https://github.com/user-attachments/assets/900db769-c716-42f6-9965-92e8560bf93a)
-![image](https://github.com/user-attachments/assets/8c398144-58b1-40ee-ab87-19790c668ff5)
+A browser-based encryption tool with a passphrase-protected vault. Encrypt messages with RSA + AES, compare it with classical ciphers, encodings and hashes, and keep results in an encrypted vault. Everything runs locally with the Web Crypto API: no server, no third-party scripts, no network requests.
 
-
-
-A no-nonsense encryption tool that works right in your browser. Encrypt messages with classic ciphers or RSA, then decrypt them no server needed. Built with vanilla JS for privacy nerds and curious learners.
+![Encrypting a message with RSA + AES](docs/screenshots/02-encrypt.png)
 
 ## Features
 
-- **Encrypt** text with:
-  - Caesar cipher (shift letters)
-  - Vigenère cipher (keyword-based)
-  - RSA (secure public/private keys)
-  - Base64 encoding
-  - SHA-256 hashing
+- **RSA + AES (hybrid) encryption** for messages of any length, using your own 3072-bit RSA key pair
+- **Classical ciphers** (Caesar, Vigenère), **Base64** encoding and **SHA-256** hashing, each labeled for what it really is: secure, classical, encoding or hash
+- **SHA-256 verification:** check whether a text matches a hash
+- **Encrypted vault:** saved results and your keys are encrypted with a key derived from your passphrase
+- **Key management:** fingerprint, public key sharing, private key backup, import and regeneration
+- Auto-locks after 10 minutes without activity, and works fully offline
+- Light and dark mode, and it works on phones
 
-- **Decrypt** messages (except hashes)
-- Save encrypted messages per user
-- Copy results with one click
-- Works offline after loading
+## Security design
 
-## How to Use
+| Part | How it works |
+| --- | --- |
+| Vault encryption | AES-256-GCM. A fresh random 96-bit IV for every save, and GCM's tag rejects a wrong passphrase or tampered data |
+| Passphrase to key | PBKDF2-HMAC-SHA256 with 600,000 iterations (OWASP 2023 guidance) and a random 128-bit salt. The derived key is non-extractable and lives only in memory while unlocked |
+| What is stored | Only the encrypted vault blob in `localStorage`. The original text of a message is never saved |
+| RSA + AES | Each message gets a new AES-256-GCM key. The message is encrypted with AES, and that key is encrypted with RSA-OAEP (SHA-256, 3072-bit). This removes RSA's size limit, the same approach PGP uses |
+| Page hardening | A strict Content Security Policy allows only this folder's own scripts, styles and fonts, and blocks every network connection. Fonts are bundled, so nothing loads from a CDN |
+| Output safety | All user and stored data is rendered with `textContent`, never as HTML |
 
-1. **Login** (demo credentials: admin/password123)
-   ![image](https://github.com/user-attachments/assets/407ec8da-50f9-491f-8233-1dbb4ad1aa68)
-3. **Encrypt**:
-   - Type your message
-   - Choose method
-     ![image](https://github.com/user-attachments/assets/4ab8edf1-8b8f-4ff9-8c8a-99af63651851)
+### Security fixes from self-review
 
-   - Click Encrypt
-     ![image](https://github.com/user-attachments/assets/5c3e599d-e3db-4719-aa27-b7863ca28572)
+The first version of this project had problems I found and fixed while reviewing my own code:
 
-4. **Decrypt**:
-   - Paste encrypted text
-   - Select same method
-   - Click Decrypt
-   ![image](https://github.com/user-attachments/assets/22259bc2-835d-448a-8769-3502a9464679)
+- **Stored XSS** in the saved-messages view: data was rendered as HTML. Now everything is rendered as text.
+- **Plaintext storage:** the original text of every message was saved unencrypted next to its "encrypted" form. Nothing is stored in plain text now.
+- **Fake login:** the username and password were hardcoded in JavaScript and could be skipped from the browser console. They are replaced by a real passphrase that encrypts the vault.
+- **Unencrypted private key:** the RSA private key was saved in plain `localStorage`. It is now kept only inside the encrypted vault.
+- **Unused third-party script:** a crypto library was loaded from a CDN without being used, a supply-chain risk for no benefit. It is removed.
 
-  
+The same review fixed functional bugs: RSA failed on messages over about 190 bytes, Base64 broke on non-Latin text such as Urdu or emoji, Vigenère produced wrong results with digits in the key, Caesar broke on negative shifts, and Export Keys crashed before the first encryption.
 
-For RSA:
-- First encryption generates keys automatically
-  ![image](https://github.com/user-attachments/assets/33fc1b55-e0d7-4bcb-b32a-a6aeac41aafb)
+## How to use
 
-- Export/Import keys to use across devices
-  ![image](https://github.com/user-attachments/assets/53aa0629-f483-4a7c-8529-122d34ea6aaa)
+Open `index.html` in a modern browser (Chrome, Edge, Firefox or Safari). No server or install is needed.
 
+1. **Create your vault** by choosing a passphrase. There is no recovery if you forget it, by design.
+2. **Encrypt:** pick a method, type a message and press Encrypt. Press **Save to vault** to keep the result.
+3. **Decrypt:** paste the result, pick the same method and key, and press Decrypt. For SHA-256, paste the original text and the hash to verify them.
+4. **Keys:** copy your public key to share it, and back up your private key somewhere safe, such as a password manager, so you can decrypt on another device.
+5. Press **Lock** when you are done. The vault also locks itself after 10 idle minutes.
 
-## Tech Used
+![Creating the vault](docs/screenshots/01-create-vault.png)
 
-- Plain JavaScript (no frameworks)
-- Web Crypto API for RSA/SHA-256
-- localStorage for user data
-- CSS Flexbox/Grid for layout
+## Screenshots
 
-## Setup
+**Decrypting with the private key**
+![Decrypt tab](docs/screenshots/03-decrypt.png)
 
-Just open `index.html` in any modern browser. No server needed.
+**The vault: saved results, encrypted at rest**
+![Vault tab](docs/screenshots/04-vault.png)
 
-## Notes
+**Key management: fingerprint, public key and private key backup**
+![Keys tab](docs/screenshots/05-keys.png)
 
-- All processing happens in your browser
-- Keys never leave your device
-- Refresh clears RSA keys unless exported
+**Dark mode**
+![Dark mode](docs/screenshots/06-dark-mode.png)
 
+## Upgrading from the first version
+
+The first version stored saved messages and the RSA key pair in `localStorage` without encryption. When you create or unlock a vault, CipherVault moves those results and keys inside the encrypted vault and then deletes the unencrypted copies, including the original text of each message. Messages encrypted with the old RSA format can still be decrypted.
+
+## Project structure
+
+- `index.html`: page structure and the Content Security Policy
+- `cipher.js`: all cryptography, as pure functions with no page access
+- `app.js`: the interface, vault and key handling
+- `style.css`: styles, with light and dark themes
+- `fonts/`: bundled fonts and their licenses
+
+## Limitations
+
+- The vault lives in one browser. Clearing site data deletes it, so back up your private key.
+- Anyone with access to your unlocked browser session can read the vault. Lock it when you step away.
+- PBKDF2 slows down passphrase guessing but cannot stop it. A long passphrase matters.
+- Caesar and Vigenère are included for learning. They are trivially breakable and should never protect real secrets.
+
+## License
+
+Released under the [MIT License](LICENSE). Fonts: Bricolage Grotesque, Public Sans and Martian Mono, each under the SIL Open Font License 1.1 (see `fonts/`).

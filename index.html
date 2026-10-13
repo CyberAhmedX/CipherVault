@@ -1,177 +1,157 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title> CipherVault </title>
-  <link rel="stylesheet" href="style.css" />
-  <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.1.1/crypto-js.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Only this folder's own files may load or run. No network requests at all. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta name="referrer" content="no-referrer">
+  <meta name="color-scheme" content="light dark">
+  <title>CipherVault</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='28' fill='%231E5A48'/%3E%3Ccircle cx='32' cy='32' r='16' fill='none' stroke='%23F3F7F4' stroke-width='5'/%3E%3Crect x='29.5' y='6' width='5' height='14' rx='2' fill='%23D9A44E'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css">
+  <script src="cipher.js" defer></script>
+  <script src="app.js" defer></script>
 </head>
-    <div class="login-container" id="loginBox">
-    <h2>🔐 User Login</h2>
-    <input type="text" id="username" placeholder="Username" />
-    <input type="password" id="password" placeholder="Password" />
-    <button onclick="login()">Login</button>
+<body>
+
+<header class="bar">
+  <div class="brand">
+    <svg class="brand-mark" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="28"/><circle class="ring" cx="32" cy="32" r="16"/><rect class="notch" x="29.5" y="6" width="5" height="14" rx="2"/></svg>
+    <span>CipherVault</span>
+  </div>
+  <div class="session" id="session" hidden>
+    <span class="status"><i class="dot"></i><span>Unlocked</span><span class="status-sub"> · locks after 10 min idle</span></span>
+    <button class="btn ghost" id="lock-btn" type="button">Lock</button>
+  </div>
+</header>
+
+<!-- ===================== LOCK SCREEN ===================== -->
+<main class="lock" id="lock">
+  <div class="dial" id="dial" aria-hidden="true">
+    <svg viewBox="0 0 200 200">
+      <circle class="dial-face" cx="100" cy="100" r="92"/>
+      <g class="dial-rotor" id="dial-rotor">
+        <g id="dial-ticks"></g>
+        <circle class="dial-hub" cx="100" cy="100" r="34"/>
+        <rect class="dial-grip" x="96" y="70" width="8" height="22" rx="3"/>
+      </g>
+      <polygon class="dial-index" points="100,2 93,-10 107,-10" transform="translate(0 12)"/>
+    </svg>
+  </div>
+
+  <section class="lock-card">
+    <h1 id="lock-title">Unlock your vault</h1>
+    <p class="lead" id="lock-lead">Enter your passphrase to decrypt your saved messages and keys.</p>
+
+    <div class="notice" id="legacy" hidden></div>
+
+    <form id="lock-form" novalidate>
+      <label class="label" for="pass">Passphrase</label>
+      <input class="field" id="pass" type="password" autocomplete="current-password" spellcheck="false">
+      <div id="confirm-wrap" hidden>
+        <label class="label" for="pass2">Repeat passphrase</label>
+        <input class="field" id="pass2" type="password" autocomplete="new-password" spellcheck="false">
+      </div>
+      <p class="hint" id="pass-hint" hidden>At least 8 characters. A few unrelated words is long and easy to remember.</p>
+      <p class="err" id="lock-err" role="alert"></p>
+      <button class="btn primary wide" id="lock-submit" type="submit">Unlock</button>
+    </form>
+
+    <p class="fine" id="lock-fine"></p>
+
+    <button class="link" id="forgot" type="button" hidden>Forgot your passphrase?</button>
+    <div class="erase" id="lock-erase" hidden>
+      <p>There is no way to recover a forgotten passphrase. That is what keeps the vault safe. You can erase the vault and start a new one, which deletes everything in it.</p>
+      <label class="label" for="lock-erase-input">Type ERASE to confirm</label>
+      <input class="field" id="lock-erase-input" autocomplete="off" spellcheck="false">
+      <button class="btn danger wide" id="lock-erase-btn" type="button" disabled>Erase vault</button>
     </div>
+  </section>
+</main>
 
-    <main id="appContent" style="display:none;">
+<!-- ===================== APP ===================== -->
+<main class="app" id="app" hidden>
+  <nav class="tabs" role="tablist" aria-label="CipherVault sections">
+    <button class="tab" role="tab" id="tab-encrypt" aria-controls="panel-encrypt" aria-selected="true" type="button">Encrypt</button>
+    <button class="tab" role="tab" id="tab-decrypt" aria-controls="panel-decrypt" aria-selected="false" tabindex="-1" type="button">Decrypt</button>
+    <button class="tab" role="tab" id="tab-vault" aria-controls="panel-vault" aria-selected="false" tabindex="-1" type="button">Vault <span class="count" id="vault-count">0</span></button>
+    <button class="tab" role="tab" id="tab-keys" aria-controls="panel-keys" aria-selected="false" tabindex="-1" type="button">Keys</button>
+  </nav>
 
-        <!-- ENCRYPTION BOX -->
-        <div class="container">
-            <h1>🔐  CipherVault Encryption</h1>
-
-            <label for="plaintext">Plain Text</label>
-            <textarea id="plaintext" placeholder="Enter your message here..."></textarea>
-
-            <label for="algorithm">Encryption Method</label>
-            <select id="algorithm" onchange="toggleKeyField()">
-                <option value="">-- Select Encryption Method --</option>
-                <option value="caesar">Caesar Cipher</option>
-                <option value="vigenere">Vigenère Cipher</option>
-                <option value="base64">Base64</option>
-                <option value="rsa">RSA</option>
-                <option value="sha256">SHA-256 (Hash)</option>
-            </select>
-
-            <!-- Key Fields -->
-            <div id="keyCaesar" class="key-field" style="display:none;">
-                <label for="caesarKey">🔢 Enter Caesar shift number:</label>
-                <input type="number" id="caesarKey" placeholder="e.g. 3" />
-            </div>
-
-            <div id="keyVigenere" class="key-field" style="display:none;">
-                <label for="vigenereKey">🔤 Enter Vigenère keyword:</label>
-                <input type="text" id="vigenereKey" placeholder="e.g. key123" />
-            </div>
-
-            <div id="keyRSA" class="key-field" style="display:none;">
-                <label>🔐 RSA uses generated public/private keys</label>
-                <div class="buttons" style="margin-top: 10px;">
-                    <button onclick="exportRSAKeys()">Export Keys</button>
-                    <button onclick="importRSAKeys()">Import Keys</button>
-                </div>
-            </div>
-            
-
-
-            <div class="buttons">
-                <button onclick="encryptText()">Encrypt</button>
-                <button onclick="copyText()">Copy</button>
-            </div>
-
-            <label for="ciphertext">Result</label>
-            <textarea id="ciphertext" readonly placeholder="Encrypted Output..."></textarea>
+  <!-- ENCRYPT -->
+  <section class="panel" role="tabpanel" id="panel-encrypt" aria-labelledby="tab-encrypt">
+    <div class="bench">
+      <div class="bench-in">
+        <fieldset class="methods" id="enc-methods"><legend class="label">Method</legend></fieldset>
+        <div class="keyzone" id="enc-key"></div>
+        <label class="label" for="enc-input">Message</label>
+        <textarea class="field area" id="enc-input" rows="7" placeholder="Type or paste the text to protect"></textarea>
+        <div class="row">
+          <span class="meta" id="enc-count">0 characters</span>
+          <button class="btn primary" id="enc-run" type="button">Encrypt</button>
         </div>
-
-        <!--DECRYPTION BOX -->
-        <div class="container">
-            <h1>🔓  CipherVault Decryption</h1>
-
-            <label for="cipherInput">Cipher Text</label>
-            <textarea id="cipherInput" placeholder="Paste encrypted message here..."></textarea>
-
-            <label for="decryptAlgo">Decryption Method</label>
-            <select id="decryptAlgo" onchange="toggleDecryptKeyField()">
-                <option value="">-- Select Decryption Method --</option>
-                <option value="caesar">Caesar Cipher</option>
-                <option value="vigenere">Vigenère Cipher</option>
-                <option value="base64">Base64</option>
-                <option value="rsa">RSA</option>
-                <option value="sha256">SHA-256 (Hash)</option>
-            </select>
-
-            <!-- Key Fields -->
-            <div id="decryptKeyCaesar" class="key-field" style="display:none;">
-                <label for="decryptCaesarKey">🔢 Enter Caesar shift number:</label>
-                <input type="number" id="decryptCaesarKey" placeholder="e.g. 3" />
-            </div>
-
-            <div id="decryptKeyVigenere" class="key-field" style="display:none;">
-                <label for="decryptVigenereKey">🔤 Enter Vigenère keyword:</label>
-                <input type="text" id="decryptVigenereKey" placeholder="e.g. key123" />
-            </div>
-
-            <div id="decryptKeyRSA" class="key-field" style="display:none;">
-                <label>🔐 RSA uses generated public/private keys. No input needed.</label>
-            </div>
-
-            <div class="buttons">
-                <button onclick="decryptNewBox()">Decrypt</button>
-                <button onclick="copyDecryptedText()">Copy</button>
-            </div>
-
-            <label for="decryptedOutput">Decrypted Output</label>
-            <textarea id="decryptedOutput" readonly placeholder="Decryption result..."></textarea>
+        <p class="err" id="enc-err" role="alert"></p>
+      </div>
+      <div class="bench-out">
+        <div class="out-head"><span class="label">Result</span><span class="meta" id="enc-meta"></span></div>
+        <textarea class="field area out" id="enc-output" rows="9" readonly placeholder="The result appears here"></textarea>
+        <div class="row end">
+          <button class="btn" id="enc-copy" type="button" disabled>Copy</button>
+          <button class="btn" id="enc-save" type="button" disabled>Save to vault</button>
         </div>
-        <div class="container">
-            <h2>📁 My Saved Encrypted Messages</h2>
-            <button onclick="showSavedMessages()">Load Saved</button>
-            <button onclick="logout()">Logout</button>
-            <div id="savedMessages" style="margin-top: 15px;">
-                <p>No messages loaded yet.</p>
-            </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DECRYPT -->
+  <section class="panel" role="tabpanel" id="panel-decrypt" aria-labelledby="tab-decrypt" hidden>
+    <div class="bench">
+      <div class="bench-in">
+        <fieldset class="methods" id="dec-methods"><legend class="label">Method</legend></fieldset>
+        <div class="keyzone" id="dec-key"></div>
+        <label class="label" for="dec-input" id="dec-input-label">Encrypted text</label>
+        <textarea class="field area mono" id="dec-input" rows="7" placeholder="Paste the text to decrypt"></textarea>
+        <div class="row">
+          <span class="meta" id="dec-count">0 characters</span>
+          <button class="btn primary" id="dec-run" type="button">Decrypt</button>
         </div>
-
-
-
-        <div id="keyExportModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; justify-content:center; align-items:center;">
-            <div style="background:white; padding:20px; border-radius:10px; max-width:600px; width:90%;">
-                 <h3>🔑 RSA Keys</h3>
-                <div style="margin-bottom:15px;">
-                    <label>Public Key:</label>
-                    <textarea id="publicKeyDisplay" style="width:100%; height:100px; font-family:monospace;" readonly></textarea>
-                    <button onclick="copyKey('publicKeyDisplay')">Copy Public Key</button>
-                </div>
-                <div style="margin-bottom:15px;">
-                    <label>Private Key (NEVER SHARE):</label>
-                    <textarea id="privateKeyDisplay" style="width:100%; height:100px; font-family:monospace;" readonly></textarea>
-                    <button onclick="copyKey('privateKeyDisplay')">Copy Private Key</button>
-                </div>
-                <button onclick="document.getElementById('keyExportModal').style.display='none'">Close</button>
-            </div>
+        <p class="err" id="dec-err" role="alert"></p>
+      </div>
+      <div class="bench-out">
+        <div class="out-head"><span class="label">Result</span><span class="meta" id="dec-meta"></span></div>
+        <textarea class="field area out" id="dec-output" rows="9" readonly placeholder="The result appears here"></textarea>
+        <div class="verdict" id="dec-verdict" role="status" hidden></div>
+        <div class="row end">
+          <button class="btn" id="dec-copy" type="button" disabled>Copy</button>
         </div>
+      </div>
+    </div>
+  </section>
 
-        
+  <!-- VAULT -->
+  <section class="panel" role="tabpanel" id="panel-vault" aria-labelledby="tab-vault" hidden>
+    <div class="vault-head">
+      <h2>Saved results</h2>
+      <p class="lead">Only results are saved, never your original text. Everything here is encrypted with AES-256-GCM using a key derived from your passphrase (PBKDF2-SHA256, <span id="kdf-iter">600,000</span> iterations).</p>
+    </div>
+    <ol class="items" id="vault-items"></ol>
+    <div class="danger-zone">
+      <h3>Erase vault</h3>
+      <p>Deletes every saved result and your RSA key pair from this browser. Export your keys first if you still need them.</p>
+      <div class="row">
+        <input class="field" id="erase-input" placeholder="Type ERASE" autocomplete="off" spellcheck="false" aria-label="Type ERASE to confirm">
+        <button class="btn danger" id="erase-btn" type="button" disabled>Erase vault</button>
+      </div>
+    </div>
+  </section>
 
-    </main>
+  <!-- KEYS -->
+  <section class="panel" role="tabpanel" id="panel-keys" aria-labelledby="tab-keys" hidden>
+    <div class="keys" id="keys-body"></div>
+  </section>
+</main>
 
-  
-
-  <script src="script.js"></script>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
- 
-
-
-
-
-  
-
-  
