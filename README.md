@@ -1,5 +1,9 @@
 # CipherVault
 
+[![Tests](https://github.com/CyberAhmedX/CipherVault/actions/workflows/tests.yml/badge.svg)](https://github.com/CyberAhmedX/CipherVault/actions/workflows/tests.yml)
+
+**Live demo: [cyberahmedx.github.io/CipherVault](https://cyberahmedx.github.io/CipherVault/)**
+
 A browser-based encryption tool with a passphrase-protected vault. Encrypt messages with RSA + AES, compare it with classical ciphers, encodings and hashes, and keep results in an encrypted vault. Everything runs locally with the Web Crypto API: no server, no third-party scripts, no network requests.
 
 ![Encrypting a message with RSA + AES](docs/screenshots/02-encrypt.png)
@@ -39,7 +43,7 @@ The same review fixed functional bugs: RSA failed on messages over about 190 byt
 
 ## How to use
 
-Open `index.html` in a modern browser (Chrome, Edge, Firefox or Safari). No server or install is needed.
+Try the [live demo](https://cyberahmedx.github.io/CipherVault/), or download the project and open `index.html` in a modern browser (Chrome, Edge, Firefox or Safari). No server or install is needed.
 
 1. **Create your vault** by choosing a passphrase. There is no recovery if you forget it, by design.
 2. **Encrypt:** pick a method, type a message and press Encrypt. Press **Save to vault** to keep the result.
@@ -67,6 +71,34 @@ Open `index.html` in a modern browser (Chrome, Edge, Firefox or Safari). No serv
 
 The first version stored saved messages and the RSA key pair in `localStorage` without encryption. When you create or unlock a vault, CipherVault moves those results and keys inside the encrypted vault and then deletes the unencrypted copies, including the original text of each message. Messages encrypted with the old RSA format can still be decrypted.
 
+## Tests
+
+GitHub Actions runs two sets of tests on every push.
+
+**Crypto unit tests** (`tests/cipher.test.js`) run the exact `cipher.js` the page uses, on Node's built-in Web Crypto:
+
+- SHA-256 against the official FIPS test vectors, and Caesar, Vigenère and Base64 against textbook examples, including Urdu and emoji
+- RSA + AES round trips for messages far longer than RSA alone allows, with a 3072-bit key
+- A changed ciphertext, a truncated message or the wrong private key is rejected, never decrypted
+- The vault uses 600,000 PBKDF2 iterations, a fresh IV for every save, and a key that can't be exported
+- A wrong passphrase, a different salt or tampered vault data can't open the vault
+
+**Browser tests** (`tests/browser/`) open the real page in Chromium, Firefox and WebKit (Safari's engine) and click through it:
+
+- Create a vault, encrypt, save, lock, fail with a wrong passphrase, unlock and decrypt
+- Nothing readable is ever stored, not even the encrypted result outside the vault
+- **Stored XSS regression:** an HTML payload saved to the vault is shown as text and never runs
+- Plaintext left by the first version is moved into the vault and deleted
+- The page makes no network requests outside its own folder
+
+To run them yourself:
+
+```bash
+node --test                       # crypto unit tests, no install needed
+npm ci && npx playwright install  # once, for the browser tests
+npx playwright test
+```
+
 ## Project structure
 
 - `index.html`: page structure and the Content Security Policy
@@ -74,12 +106,14 @@ The first version stored saved messages and the RSA key pair in `localStorage` w
 - `app.js`: the interface, vault and key handling
 - `style.css`: styles, with light and dark themes
 - `fonts/`: bundled fonts and their licenses
+- `tests/`: crypto unit tests and browser tests
 
 ## Limitations
 
 - The vault lives in one browser. Clearing site data deletes it, so back up your private key.
 - Anyone with access to your unlocked browser session can read the vault. Lock it when you step away.
 - PBKDF2 slows down passphrase guessing but cannot stop it. A long passphrase matters.
+- The live demo is served from `cyberahmedx.github.io`, the same site as my portfolio, so both share browser storage. It's for trying CipherVault out. For real secrets, download it and open `index.html` from your own computer.
 - Caesar and Vigenère are included for learning. They are trivially breakable and should never protect real secrets.
 
 ## License

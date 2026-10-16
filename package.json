@@ -1,0 +1,12 @@
+{
+  "name": "ciphervault",
+  "private": true,
+  "description": "Tests for CipherVault. The app itself has no dependencies and needs no install.",
+  "scripts": {
+    "test": "node --test",
+    "test:browser": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.1"
+  }
+}
